@@ -1,0 +1,86 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+<!-- Меняем заголовок вкладки браузера -->
+{% block title %}{{ title }} | БАЗА CRM{% endblock %}
+
+<!-- Меняем левую часть шапки (Логотип + Название) -->
+{% block branding %}
+<h1 id="site-name">
+    <a href="{% url 'admin:index' %}" style="display: flex; align-items: center; gap: 10px; text-decoration: none;">
+        <img src="{% static 'img/logo.png' %}" alt="Логотип" style="width: 32px; height: 32px; object-fit: contain;">
+        <span style="color: white; font-weight: bold; letter-spacing: 2px;">БАЗА</span>
+    </a>
+</h1>
+{% endblock %}
+
+<!-- Внедряем нашу корпоративную магию CSS -->
+{% block extrastyle %}
+{{ block.super }}
+<style>
+    /* Переопределяем стандартные цвета Django Admin под наши */
+    :root {
+        /* Шапка */
+        --header-bg: #212529; /* Наш фирменный темный фон (как в навигации) */
+        --header-color: #ffffff;
+        --header-branding-color: #ffffff;
+        
+        /* Заголовки таблиц и модулей */
+        --secondary: #212529; 
+        
+        /* Кнопки "Сохранить", "Добавить" и галочки */
+        --primary: #D7B56D; /* Золотой */
+        --primary-fg: #000000; /* Текст на золотых кнопках делаем черным */
+        
+        --button-bg: #D7B56D;
+        --button-fg: #000000;
+        --button-hover-bg: #212529;
+        --button-hover-fg: #D7B56D;
+        
+        /* Хлебные крошки (строка под шапкой) */
+        --breadcrumbs-bg: #D7B56D;
+        --breadcrumbs-fg: #000000;
+        --breadcrumbs-link-fg: #000000;
+        
+        /* Текстовые ссылки (названия объектов) */
+        --link-fg: #b59550; /* Темно-золотой, чтобы хорошо читалось на белом фоне */
+        --link-hover-color: #212529;
+        
+        /* Цвета выделенных строк */
+        --selected-row: rgba(215, 181, 109, 0.15);
+        --selected-bg: rgba(215, 181, 109, 0.3);
+        
+        /* Боковое меню */
+        --darkened-bg: #f8f9fa;
+    }
+
+    /* Дополнительные точечные улучшения */
+    #header {
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); /* Легкая тень под шапкой */
+    }
+    div.breadcrumbs {
+        font-weight: bold;
+    }
+    .module h2, .module caption, .inline-group h2 {
+        color: #D7B56D !important; /* Делаем текст в черных плашках золотым */
+        letter-spacing: 1px;
+    }
+    input[type="submit"], input[type="button"], .button {
+        border-radius: 4px;
+        font-weight: bold;
+        transition: all 0.2s ease;
+    }
+    #nav-sidebar .current-app .section:link, #nav-sidebar .current-app .section:visited {
+        color: #D7B56D; /* Выделение активного раздела в меню слева */
+    }
+    
+    /* Стилизуем таблички в админке под наши */
+    #changelist table {
+        border-bottom: 2px solid #D7B56D;
+    }
+    #changelist-filter h2 {
+        background: #212529;
+        color: #D7B56D;
+    }
+</style>
+{% endblock %}

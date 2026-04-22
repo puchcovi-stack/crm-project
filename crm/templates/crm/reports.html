@@ -1,0 +1,173 @@
+{% extends 'crm/base.html' %}
+{% load mathfilters %}
+{% block content %}
+
+<div class="container-fluid pb-5 report-page">
+    <div class="row justify-content-center">
+        <div class="col-xl-10">
+            <!-- ПАНЕЛЬ ФИЛЬТРОВ -->
+            <div class="mb-4">
+                <div class="d-flex flex-column gap-2">
+                    <label class="small fw-bold text-muted text-uppercase" style="letter-spacing: 1px;">Выбор периода отчета:</label>
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="btn-group shadow-sm" role="group">
+                            <a href="?period=month" class="btn {% if current_period == 'month' %}bg-gold fw-bold{% else %}btn-dark{% endif %} px-4">Месяц</a>
+                            <a href="?period=year" class="btn {% if current_period == 'year' %}bg-gold fw-bold{% else %}btn-dark{% endif %} px-4">Год</a>
+                            <!-- Кнопка выбора даты -->
+                            <button type="button" id="btnCustomDate" class="btn {% if current_period == 'custom' %}bg-gold fw-bold{% else %}btn-dark{% endif %} px-4">
+                                <i class="bi bi-calendar3 me-2"></i>Выбрать даты
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-white">
+                <div class="card-header bg-dark text-white py-2 px-4 border-0 d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="bg-gold d-flex align-items-center justify-content-center rounded-2 shadow-sm text-dark" style="width: 32px; height: 32px; flex-shrink: 0;">
+                            <i class="bi bi-bar-chart-fill" style="font-size: 1rem;"></i>
+                        </div>
+                        <h6 class="mb-0 fw-bold text-uppercase" style="letter-spacing: 1px; font-size: 0.85rem;">
+                            Сводный отчет по менеджерам ({{ report_label }})
+                        </h6>
+                    </div>
+                    <button class="btn btn-outline-light btn-sm px-3 rounded-pill py-1" onclick="window.print()" style="font-size: 0.7rem; border-color: rgba(255,255,255,0.2);">
+                        <i class="bi bi-printer me-1"></i>Печать
+                    </button>
+                </div>
+                
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table id="reportTable" class="table table-hover align-middle mb-0 report-table-styled">
+                            <thead>
+                                <tr>
+                                    <th class="text-center py-3" style="width: 40%;">Сотрудник</th>
+                                    <th class="text-center py-3">Покупатели</th>
+                                    <th class="text-center py-3">Арендаторы</th>
+                                    <th class="text-center py-3">Продажа</th>
+                                    <th class="text-center py-3">Аренда</th>
+                                    <th class="text-center py-3 pe-4">Итого</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for m in report_data %}
+                                <tr>
+                                    <td class="ps-4 py-3">
+                                        <div class="d-flex align-items-center gap-3">
+                                            <div class="avatar-circle">{{ m.first_name|default:m.username|slice:":1" }}</div>
+                                            <span class="fw-bold text-dark">{{ m.first_name|default:m.username }}</span>
+                                        </div>
+                                    </td>
+                                    <td class="text-center fw-bold text-dark">{{ m.c_buy }}</td>
+                                    <td class="text-center fw-bold text-dark">{{ m.c_rent }}</td>
+                                    <td class="text-center fw-bold text-dark">{{ m.p_sale }}</td>
+                                    <td class="text-center fw-bold text-dark">{{ m.p_rent }}</td>
+                                    <td class="text-center pe-4">
+                                        {% with m_total=m.p_sale|add:m.p_rent|add:m.c_buy|add:m.c_rent %}
+                                        <span class="badge bg-dark px-3 py-2 rounded-pill" style="min-width: 45px; font-size: 0.85rem;">{{ m_total }}</span>
+                                        {% endwith %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot class="report-footer">
+                                <tr class="fw-bold">
+                                    <td class="ps-4 py-3">ИТОГО ПО КОМПАНИИ ЗА ПЕРИОД:</td>
+                                    <td class="text-center py-3">{{ period_totals.buyers }}</td>
+                                    <td class="text-center py-3">{{ period_totals.renters }}</td>
+                                    <td class="text-center py-3">{{ period_totals.sale }}</td>
+                                    <td class="text-center py-3">{{ period_totals.rent }}</td>
+                                    <td class="text-center pe-4 py-3">
+                                        <span class="badge bg-dark text-white px-4 py-2 rounded-pill" style="font-size: 0.9rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                                            {{ period_totals.sale|add:period_totals.rent|add:period_totals.buyers|add:period_totals.renters }}
+                                        </span>
+                                    </td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    #customGlobalSearch, #customClearBtn, .report-page .filters { display: none !important; }
+    .report-page .custom-table-scroll { max-height: none !important; overflow: visible !important; border: none !important; }
+    
+    .report-table-styled { border-collapse: collapse !important; width: 100% !important; }
+    
+    /* ИСПРАВЛЕННЫЕ СТИЛИ ДЛЯ ЗАГОЛОВКОВ ТАБЛИЦЫ */
+    .report-table-styled thead th {
+        font-size: 0.75rem !important;
+        letter-spacing: 0.5px !important;
+        color: #ffffff !important;
+        background-color: #212529 !important; /* Жесткий черный фон */
+        border: none !important;
+        text-transform: uppercase !important;
+    }
+
+    .report-table-styled tbody tr { border-bottom: 1px solid #f1f1f1; }
+    .report-table-styled tbody tr:hover { background-color: rgba(215, 181, 109, 0.05) !important; }
+    
+    .avatar-circle {
+        width: 32px; height: 32px; background: #eaeff2; color: #495057;
+        border-radius: 8px; display: flex; align-items: center;
+        justify-content: center; font-weight: bold; font-size: 0.8rem;
+        border: 1px solid #dee2e6;
+    }
+
+    .report-table-styled tfoot tr td {
+        background-color: #D7B56D !important;
+        color: #000 !important;
+        border-top: 1px solid #212529 !important;
+        border-bottom: none !important;
+    }
+
+    .report-table-styled thead th.sorting { padding-right: 25px !important; }
+
+    #table-loader { display: none !important; }
+    #table-wrapper { opacity: 1 !important; visibility: visible !important; }
+
+    @media print {
+        nav, .btn-group, label { display: none !important; }
+        body { background: white !important; }
+        .card { box-shadow: none !important; border: 1px solid #eee !important; }
+        .report-table-styled tfoot tr td { 
+            background-color: #D7B56D !important; 
+            print-color-adjust: exact; 
+            -webkit-print-color-adjust: exact; 
+        }
+    }
+</style>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Инициализация таблицы
+        $('#reportTable').DataTable({
+            "language": { "url": "https://cdn.datatables.net/plug-ins/1.13.6/i18n/ru.json" },
+            "paging": false, "searching": false, "info": false, "autoWidth": false,
+            "order": [[5, "desc"]] 
+        });
+
+        // Прямая привязка календаря к кнопке
+        flatpickr("#btnCustomDate", {
+            mode: "range",
+            dateFormat: "Y-m-d",
+            locale: "ru",
+            onClose: function(selectedDates, dateStr, instance) {
+                if (selectedDates.length === 2) {
+                    const start = instance.formatDate(selectedDates[0], "Y-m-d");
+                    const end = instance.formatDate(selectedDates[1], "Y-m-d");
+                    window.location.href = `?period=custom&start_date=${start}&end_date=${end}`;
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

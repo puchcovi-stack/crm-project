@@ -1,0 +1,220 @@
+{% extends 'crm/base.html' %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Заголовок и кнопки -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="fw-bold mb-1" style="color: #D7B56D;">
+                        <i class="bi bi-folder2-open me-2"></i>Структура проекта
+                    </h2>
+                    <p class="text-muted mb-0">Дерево файлов и папок проекта CRM</p>
+                </div>
+                <div>
+                    <button id="downloadTxtBtn" class="btn btn-outline-dark rounded-pill px-4">
+                        <i class="bi bi-download me-2"></i>Скачать TXT
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Основная таблица -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-dark text-white py-3">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-code-slash me-2"></i>
+                        <span class="fw-medium">Файловая структура</span>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
+                        <table id="structureTable" class="table table-hover mb-0" style="font-family: 'Courier New', monospace; font-size: 0.9rem; width: 100%;">
+                            <thead class="bg-light position-sticky" style="top: 0; z-index: 10;">
+                                <tr>
+                                    <th style="width: 100%; border-bottom: 2px solid #D7B56D;">Название</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in project_structure %}
+                                <tr data-path="{{ item.path|default:item.name }}" data-type="{{ item.type }}">
+                                    <td>
+                                        <span style="padding-left: {{ item.level }}rem;">
+                                            {% if item.type == 'dir' %}
+                                                <i class="bi bi-folder-fill me-2" style="color: #D7B56D;"></i>
+                                            {% else %}
+                                                <i class="bi bi-file-earmark-text me-2" style="color: #6c757d;"></i>
+                                            {% endif %}
+                                            {{ item.name }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Информационная панель -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="alert alert-info d-flex align-items-center mb-0" role="alert">
+                <i class="bi bi-info-circle-fill me-2 fs-5"></i>
+                <div>
+                    <strong>Информация:</strong> Эта страница доступна только пользователям с правами администратора. 
+                    Здесь отображается текущая структура проекта без служебных папок (__pycache__, .git, migrations и др.).
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Скрываем элементы управления главной таблицей */
+    #customGlobalSearch, 
+    #customClearBtn { 
+        display: none !important; 
+    }
+    
+    .table tbody tr:hover {
+        background-color: rgba(215, 181, 109, 0.08) !important;
+    }
+    
+    .table td {
+        vertical-align: middle;
+        padding-top: 0.5rem;
+        padding-bottom: 0.5rem;
+    }
+    
+    /* Стилизация скроллбара */
+    .table-responsive::-webkit-scrollbar { 
+        width: 8px; 
+        height: 8px; 
+    }
+    .table-responsive::-webkit-scrollbar-track { 
+        background: #f1f1f1; 
+        border-radius: 4px; 
+    }
+    .table-responsive::-webkit-scrollbar-thumb { 
+        background: #c1c1c1; 
+        border-radius: 4px; 
+    }
+    .table-responsive::-webkit-scrollbar-thumb:hover { 
+        background: #D7B56D; 
+    }
+    
+    /* DataTables search box styling */
+    .dataTables_wrapper .dataTables_filter {
+        margin-bottom: 15px;
+        margin-right: 15px;
+    }
+    
+    .dataTables_wrapper .dataTables_filter input {
+        border: 1px solid #dee2e6;
+        border-radius: 20px;
+        padding: 0.4rem 1rem;
+        margin-left: 8px;
+        outline: none;
+    }
+    
+    .dataTables_wrapper .dataTables_filter input:focus {
+        border-color: #D7B56D;
+        box-shadow: 0 0 0 2px rgba(215, 181, 109, 0.2);
+    }
+    
+    .dataTables_wrapper .dataTables_length {
+        margin-bottom: 15px;
+        margin-left: 15px;
+    }
+    
+    .dataTables_wrapper .dataTables_length select {
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 0.2rem 0.5rem;
+        margin: 0 5px;
+    }
+    
+    .dataTables_wrapper .dataTables_info {
+        margin-left: 15px;
+        margin-bottom: 15px;
+        color: #6c757d;
+        font-size: 0.85rem;
+    }
+    
+    .dataTables_wrapper .dataTables_paginate {
+        margin-right: 15px;
+        margin-bottom: 15px;
+    }
+    
+    .dataTables_wrapper .dataTables_paginate .paginate_button {
+        border-radius: 6px !important;
+        margin: 0 2px;
+    }
+    
+    .dataTables_wrapper .dataTables_paginate .paginate_button.current {
+        background: #D7B56D !important;
+        border-color: #D7B56D !important;
+        color: #000 !important;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Инициализация DataTables с поиском
+        var table = $('#structureTable').DataTable({
+            "language": {
+                "url": "https://cdn.datatables.net/plug-ins/1.13.6/i18n/ru.json"
+            },
+            "paging": true,
+            "pageLength": 50,
+            "lengthMenu": [[25, 50, 100, -1], [25, 50, 100, "Все"]],
+            "searching": true,
+            "ordering": true,
+            "info": true,
+            "autoWidth": false,
+            "order": [[0, "asc"]],
+            "columnDefs": [
+                { "orderable": true, "targets": 0 }
+            ],
+            "dom": '<"d-flex justify-content-between align-items-center flex-wrap"lf>rt<"d-flex justify-content-between align-items-center"ip>'
+        });
+
+        // Функция для скачивания в TXT
+        $('#downloadTxtBtn').on('click', function() {
+            var content = "=== СТРУКТУРА ПРОЕКТА CRM ===\n";
+            content += "Дата экспорта: " + new Date().toLocaleString('ru-RU') + "\n";
+            content += "==================================================\n\n";
+            
+            // Собираем все строки из таблицы
+            $('#structureTable tbody tr').each(function() {
+                var $row = $(this);
+                var type = $row.data('type');
+                var nameCell = $row.find('td:first').text().trim();
+                
+                var prefix = (type === 'dir') ? '[DIR]  ' : '[FILE] ';
+                content += prefix + nameCell + "\n";
+            });
+            
+            content += "\n==================================================\n";
+            content += "Всего элементов: " + $('#structureTable tbody tr').length;
+            
+            // Создаём и скачиваем файл
+            var blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+            var link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'project_structure_' + new Date().toISOString().slice(0,10) + '.txt';
+            link.click();
+            URL.revokeObjectURL(link.href);
+        });
+    });
+</script>
+{% endblock %}

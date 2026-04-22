@@ -1,0 +1,372 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>БАЗА Золотая середина</title>
+    
+   <link rel="icon" type="image/x-icon" href="{% static 'img/favicon.ico' %}">
+
+    <link href="{% static 'vendor/bootstrap/bootstrap.min.css' %}" rel="stylesheet">
+    <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" rel="stylesheet">
+    
+    <style>
+        body { overflow: hidden; }
+        .bg-gold { background-color: #D7B56D !important; color: #000000 !important; }
+        .table-gold-header thead .filters th { border-bottom: 3px solid #D7B56D !important; }
+        .btn-menu { color: #ffffff; transition: 0.3s; }
+        .btn-menu:hover { color: #D7B56D; }
+        .page-item.active .page-link { background-color: #D7B56D !important; border-color: #D7B56D !important; color: black !important; }
+        
+        table.dataTable thead > tr > th.sorting,
+        table.dataTable thead > tr > th.sorting_asc,
+        table.dataTable thead > tr > th.sorting_desc { padding-right: 26px !important; }
+        
+        table.dataTable thead > tr > th.sorting::before, table.dataTable thead > tr > th.sorting::after,
+        table.dataTable thead > tr > th.sorting_asc::before, table.dataTable thead > tr > th.sorting_asc::after,
+        table.dataTable thead > tr > th.sorting_desc::before, table.dataTable thead > tr > th.sorting_desc::after { color: #D7B56D !important; }
+        table.dataTable thead > tr > th.sorting::before, table.dataTable thead > tr > th.sorting::after { opacity: 0.4 !important; }
+        table.dataTable thead > tr > th.sorting_asc::before, table.dataTable thead > tr > th.sorting_desc::after { opacity: 1 !important; }
+        
+        .count-separator { border-left: 2px solid currentColor; padding-left: 8px; margin-left: 8px; opacity: 0.6; font-weight: 600; }
+        .table { font-size: 0.85rem !important; }
+        .table th, .table td { padding: 0.35rem 0.5rem !important; vertical-align: middle; }
+        .badge { font-size: 0.75rem; padding: 0.35em 0.5em; }
+        
+        .col-number { width: 50px !important; min-width: 50px !important; max-width: 50px !important; text-align: center; }
+        .narrow-col { width: 1% !important; white-space: nowrap !important; }
+        .narrow-col input { min-width: 60px; }
+        .truncate-text { max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        
+        tbody tr td:not(:nth-last-child(1)):not(:nth-last-child(2)) { cursor: pointer; }
+        tbody tr td:not(:nth-last-child(1)):not(:nth-last-child(2)):hover { background-color: rgba(215, 181, 109, 0.1) !important; }
+        
+        .status-toggle { cursor: pointer; transition: all 0.2s ease; border: 1px solid transparent; }
+        .status-toggle:hover { transform: scale(1.05); filter: brightness(1.1); box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        
+        .row-not-actual { opacity: 0.55; transition: opacity 0.2s ease; }
+        .row-not-actual td { color: #888888 !important; }
+        .row-not-actual .badge { opacity: 0.6; filter: grayscale(100%); }
+        .row-not-actual:hover { opacity: 0.9; background-color: rgba(215, 181, 109, 0.05) !important; }
+        
+        .filters th { padding: 4px 4px !important; background-color: #2c3034 !important; }
+        .filters input, .filters select { width: 100%; padding: 3px; font-size: 0.8rem; border-radius: 4px; border: 1px solid #555; background-color: #fff; box-sizing: border-box; }
+        .filters input:focus, .filters select:focus { outline: none; box-shadow: 0 0 0 2px #D7B56D; border-color: #D7B56D; }
+        table.dataTable thead .filters th { background-image: none !important; }
+        .filters .min-range, .filters .max-range { width: 50% !important; text-align: center; }
+        
+        .date-range-filter { text-align: center; cursor: pointer !important; background-color: #fff !important; }
+        #customGlobalSearch:focus { outline: none; box-shadow: 0 0 0 2px #D7B56D; border-color: #D7B56D; }
+        
+        .btn-square-gold { width: 32px !important; height: 32px !important; min-width: 32px !important; max-width: 32px !important; flex-shrink: 0; padding: 0 !important; display: flex !important; align-items: center; justify-content: center; transition: 0.2s; background-color: #D7B56D !important; color: #000 !important; border: none; border-radius: 4px; }
+        .btn-square-gold:hover { opacity: 0.8; }
+        .btn-profile { transition: all 0.2s ease; background-color: transparent; }
+        .btn-profile:hover { background-color: rgba(255, 255, 255, 0.05); }
+
+        .btn-outline-gold-toggle { color: #212529; border: 2px solid #dee2e6; transition: all 0.2s ease; background-color: #fff; }
+        .btn-outline-gold-toggle:hover { border-color: #D7B56D; background-color: rgba(215, 181, 109, 0.05); }
+        .btn-check:checked + .btn-outline-gold-toggle { background-color: #D7B56D; border-color: #D7B56D; color: #000; font-weight: bold; box-shadow: 0 4px 10px rgba(215, 181, 109, 0.25); }
+        
+        .form-control:focus, .form-select:focus { border-color: #D7B56D; box-shadow: 0 0 0 2px rgba(215, 181, 109, 0.25); }
+        
+        .table-responsive { overflow: hidden !important; }
+        
+        /* ИСПРАВЛЕННЫЙ БЛОК КОНТЕЙНЕРА */
+        .table-container {
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            background-color: #fff;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+            min-height: 0;
+        }
+        
+        .custom-table-scroll { 
+            flex-grow: 1;
+            overflow-y: auto; 
+            overflow-x: auto;
+            background-color: #fff;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            min-height: 0;
+        }
+        .custom-table-scroll .table-container {
+            border: none;
+            border-radius: 0;
+        }
+        .custom-table-scroll .table {
+            margin-top: 0 !important;
+        }
+        .custom-table-scroll thead { 
+            position: sticky; 
+            top: 0; 
+            z-index: 105;
+            margin: 0;
+        }
+        .custom-table-scroll thead tr:first-child th {
+            top: 0;
+        }
+        .custom-table-scroll th, .custom-table-scroll td { 
+            border-right: 1px solid #dee2e6 !important; 
+            border-bottom: 1px solid #dee2e6 !important; 
+            border-top: none !important; 
+            border-left: none !important; 
+        }
+        .custom-table-scroll th:last-child, .custom-table-scroll td:last-child { border-right: none !important; }
+        .custom-table-scroll thead th { 
+            background-color: #212529 !important; 
+            background-clip: padding-box;
+            box-shadow: none !important;
+        }
+        .custom-table-scroll::-webkit-scrollbar { width: 10px; height: 10px; }
+        .custom-table-scroll::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+        .custom-table-scroll::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px; }
+        .custom-table-scroll::-webkit-scrollbar-thumb:hover { background: #D7B56D; }
+
+        .date-badge { display: inline-block; padding: 3px 6px; border-radius: 6px; font-weight: 600; font-size: 0.8rem; }
+        .date-green { background-color: #e8f5e9; color: #1b5e20; border: 1px solid #c8e6c9; }
+        .date-red { background-color: #ffebee; color: #b71c1c; border: 1px solid #ffcdd2; }
+        .date-toggle { cursor: pointer; transition: all 0.2s ease; }
+
+        #table-wrapper { opacity: 0; visibility: hidden; transition: opacity 0.3s ease; display: flex; flex-direction: column; height: calc(100vh - 140px); }
+        #table-wrapper.visible { opacity: 1; visibility: visible; }
+        #table-loader { display: flex; justify-content: center; align-items: center; min-height: 50vh; color: #D7B56D; }
+        .dataTables_paginate { margin-top: 12px; margin-bottom: 5px; float: right; }
+        .dataTables_length { margin-top: 12px; margin-bottom: 5px; float: left; font-size: 0.9rem; font-weight: 500; color: #555; }
+        
+        /* Убираем отступы у таблицы внутри скролла */
+        .custom-table-scroll table {
+            margin-top: 0 !important;
+            margin-bottom: 0 !important;
+        }
+        .custom-table-scroll thead tr th {
+            border-top: none !important;
+        }
+        .dataTables_wrapper .custom-table-scroll {
+            margin-top: 0;
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+        }
+        
+        /* ИСПРАВЛЕННЫЙ БЛОК ОБЕРТКИ ТАБЛИЦЫ */
+        .dataTables_wrapper {
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+            min-height: 0;
+            height: 100%;
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="bg-light" 
+      data-is-staff="{{ request.user.is_staff|yesno:'true,false' }}" 
+      data-user-id="{{ request.user.id }}">
+      
+    <!-- Блок сообщений Django -->
+    {% if messages %}
+    <div class="container-fluid px-4 mt-2">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <nav class="navbar navbar-dark bg-dark mb-3 py-2 shadow">
+        <div class="container-fluid px-4 d-flex align-items-center">
+            <div class="d-flex align-items-center" style="flex: 1;">
+                <a class="navbar-brand d-flex align-items-center gap-2 m-0" href="/">
+                    <img src="{% static 'img/logo.png' %}" alt="Логотип" style="width: 48px; height: 48px; object-fit: contain; margin: -5px 0;">
+                    <div class="d-flex align-items-center ms-1"><span class="fs-4 fw-bold text-white" style="letter-spacing: 2px;">БАЗА</span></div>
+                </a>
+            </div>
+
+            <div class="d-flex justify-content-center">
+                <a class="btn {% if active_tab == 'buyers' %}bg-gold fw-bold{% else %}btn-menu{% endif %} border-0 me-3" href="{% url 'buyers' %}">Покупатели<span class="count-separator">{{ counts.buyers }}</span></a>
+                <a class="btn {% if active_tab == 'renters' %}bg-gold fw-bold{% else %}btn-menu{% endif %} border-0 me-3" href="{% url 'renters' %}">Арендаторы<span class="count-separator">{{ counts.renters }}</span></a>
+                <a class="btn {% if active_tab == 'sale' %}bg-gold fw-bold{% else %}btn-menu{% endif %} border-0 me-3" href="{% url 'sale_list' %}">Объекты Продажа<span class="count-separator">{{ counts.sale }}</span></a>
+                <a class="btn {% if active_tab == 'rent' %}bg-gold fw-bold{% else %}btn-menu{% endif %} border-0" href="{% url 'rent_list' %}">Объекты Аренда<span class="count-separator">{{ counts.rent }}</span></a>
+            </div>
+
+            <div class="d-flex justify-content-end align-items-center gap-3" style="flex: 1;">
+                <div class="d-flex gap-2 align-items-center">
+                    <button type="button" class="btn btn-square-gold shadow-sm" id="btnOpenAddModal" title="Добавить запись"><i class="bi bi-plus-lg" style="font-size: 1.2rem;"></i></button>
+                    <button type="button" class="btn btn-square-gold shadow-sm" id="customClearBtn" title="Сбросить все фильтры"><i class="bi bi-arrow-counterclockwise" style="font-size: 1.1rem;"></i></button>
+                    <input type="text" id="customGlobalSearch" class="form-control form-control-sm shadow-sm" placeholder="Поиск..." style="max-width: 220px; border: 2px solid #D7B56D; height: 32px;">
+                </div>
+
+                <div class="dropdown">
+                    <button class="btn btn-profile d-flex align-items-center gap-2 border-0 p-1 rounded dropdown-toggle" type="button" id="userMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
+                        <img src="https://ui-avatars.com/api/?name={{ request.user.first_name|default:request.user.username|urlencode }}&background=D7B56D&color=000&size=36" alt="Аватар" class="rounded-circle shadow-sm">
+                        <span class="text-white fw-semibold me-1">{{ request.user.first_name|default:request.user.username }}</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end shadow-lg mt-2" aria-labelledby="userMenuButton">
+                        {% if request.user.is_staff %}
+                            <li><a class="dropdown-item" href="{% url 'reports' %}"><i class="bi bi-graph-up-arrow me-2"></i>Сводный отчет</a></li>
+                            <li><a class="dropdown-item" href="{% url 'info' %}"><i class="bi bi-folder2-open me-2"></i>Структура проекта</a></li>
+                            <li><a class="dropdown-item" href="{% url 'admin:index' %}"><i class="bi bi-gear me-2"></i>Панель управления</a></li>
+                            <li><hr class="dropdown-divider border-secondary"></li>
+                        {% endif %}
+                        <li>
+                            <form action="{% url 'logout' %}" method="post" class="m-0 p-0">
+                                {% csrf_token %}
+                                <button type="submit" class="dropdown-item text-danger w-100 text-start"><i class="bi bi-box-arrow-right me-2"></i>Выйти</button>
+                            </form>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid px-4 position-relative">
+        <div id="table-loader">
+            <div class="spinner-border" style="width: 3rem; height: 3rem; border-width: 0.3em;" role="status">
+                <span class="visually-hidden">Загрузка...</span>
+            </div>
+        </div>
+        <div id="table-wrapper">
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+
+    <!-- Модальное окно №1: Выбор типа записи -->
+    <div class="modal fade" id="addRecordModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" style="max-width: 400px;">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-dark text-white border-0 py-3">
+                    <h5 class="modal-title fw-bold" style="letter-spacing: 1px; font-size: 1.1rem;"><i class="bi bi-database-add text-warning me-2" style="color: #D7B56D !important;"></i>Новая запись</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4 bg-light">
+                    <div class="mb-4">
+                        <label class="form-label fw-bold text-muted small mb-2">ШАГ 1: КАТЕГОРИЯ</label>
+                        <div class="d-flex gap-2">
+                            <input type="radio" class="btn-check" name="recordType" id="typeProperty" value="property" autocomplete="off">
+                            <label class="btn btn-outline-gold-toggle flex-fill py-2" for="typeProperty"><i class="bi bi-building me-2"></i>Объект</label>
+                            <input type="radio" class="btn-check" name="recordType" id="typeClient" value="client" autocomplete="off">
+                            <label class="btn btn-outline-gold-toggle flex-fill py-2" for="typeClient"><i class="bi bi-person-fill me-2"></i>Клиент</label>
+                        </div>
+                    </div>
+                    <div class="mb-2" id="step2Block" style="display: none;">
+                        <label class="form-label fw-bold text-muted small mb-2">ШАГ 2: ТИП СДЕЛКИ</label>
+                        <div class="d-flex gap-2">
+                            <input type="radio" class="btn-check" name="dealType" id="dealAction1" value="" autocomplete="off">
+                            <label class="btn btn-outline-gold-toggle flex-fill py-2" for="dealAction1" id="labelAction1"></label>
+                            <input type="radio" class="btn-check" name="dealType" id="dealAction2" value="rent" autocomplete="off">
+                            <label class="btn btn-outline-gold-toggle flex-fill py-2" for="dealAction2" id="labelAction2"></label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 bg-light px-4 pb-4 pt-0">
+                    <button type="button" class="btn btn-dark w-100 py-2 fw-bold" id="continueAddBtn" style="display: none;">ПРОДОЛЖИТЬ</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно №2: Форма -->
+    <div class="modal fade" id="addFormModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-dark text-white border-0 py-3">
+                    <h5 class="modal-title fw-bold" id="addFormModalTitle" style="font-size: 1.1rem;"></h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4 bg-light">
+                    <!-- Форма Объекта -->
+                    <form id="formPropertyView" style="display: none;">
+                        <div class="row g-3">
+                            <div class="col-md-6"><label class="form-label text-muted small fw-bold mb-1">ИМЯ ВЛАДЕЛЬЦА</label><input type="text" name="owner_name" class="form-control"></div>
+                            <div class="col-md-6"><label class="form-label text-muted small fw-bold mb-1">ТЕЛЕФОН</label><input type="text" name="phone" class="form-control"></div>
+                            <div class="col-md-12"><label class="form-label text-muted small fw-bold mb-1">АДРЕС ОБЪЕКТА</label><input type="text" name="address" class="form-control"></div>
+                            <div class="col-md-4"><label class="form-label text-muted small fw-bold mb-1">ПЛОЩАДЬ (м²)</label><input type="number" name="area" step="0.1" class="form-control"></div>
+                            <div class="col-md-4"><label class="form-label text-muted small fw-bold mb-1">СТОИМОСТЬ (₽)</label><input type="number" name="price" class="form-control"></div>
+                            <div class="col-md-4"><label class="form-label text-muted small fw-bold mb-1">УРОВНИ</label><input type="number" name="levels" class="form-control" value="1"></div>
+                            <div class="col-md-6"><label class="form-label text-muted small fw-bold mb-1">ЭТАЖ</label><input type="text" name="floor" class="form-control"></div>
+                            <div class="col-md-6"><label class="form-label text-muted small fw-bold mb-1">ВСЕГО ЭТАЖЕЙ</label><input type="text" name="total_floors" class="form-control"></div>
+                            {% if request.user.is_staff %}
+                            <div class="col-md-12">
+                                <label class="form-label text-muted small fw-bold mb-1">МЕНЕДЖЕР</label>
+                                <select name="manager_id" class="form-select">
+                                    <option value="{{ request.user.id }}">Себе ({{ request.user.username }})</option>
+                                    {% for u in users %}
+                                        {% if u.id != request.user.id %}<option value="{{ u.id }}">{{ u.first_name|default:u.username }}</option>{% endif %}
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            {% endif %}
+                            <div class="col-md-12"><label class="form-label text-muted small fw-bold mb-1">ПРИМЕЧАНИЕ</label><textarea name="notes" class="form-control" rows="3"></textarea></div>
+                        </div>
+                    </form>
+                    <!-- Форма Клиента -->
+                    <form id="formClientView" style="display: none;">
+                        <div class="row g-3">
+                            <div class="col-md-6"><label class="form-label text-muted small fw-bold mb-1">ИМЯ КЛИЕНТА</label><input type="text" name="name" class="form-control"></div>
+                            <div class="col-md-6"><label class="form-label text-muted small fw-bold mb-1">ТЕЛЕФОН</label><input type="text" name="phone" class="form-control"></div>
+                            <div class="col-md-4"><label class="form-label text-muted small fw-bold mb-1">НАЗВАНИЕ КОМПАНИИ</label><input type="text" name="company_name" class="form-control"></div>
+                            <div class="col-md-4"><label class="form-label text-muted small fw-bold mb-1">ВИД ДЕЯТЕЛЬНОСТИ</label><input type="text" name="activity_type" class="form-control"></div>
+                            <div class="col-md-4"><label class="form-label text-muted small fw-bold mb-1">ЖЕЛАЕМЫЙ ЭТАЖ</label><input type="text" name="floor_pref" class="form-control"></div>
+                            <div class="col-md-4"><label class="form-label text-muted small fw-bold mb-1">БЮДЖЕТ (₽)</label><input type="number" name="budget" class="form-control"></div>
+                            <div class="col-md-4"><label class="form-label text-muted small fw-bold mb-1">ПЛОЩАДЬ</label><input type="text" name="area_required" class="form-control"></div>
+                            <div class="col-md-4"><label class="form-label text-muted small fw-bold mb-1">ЧТО ИЩЕТ</label><input type="text" name="property_type" class="form-control"></div>
+                            <div class="col-md-6"><label class="form-label text-muted small fw-bold mb-1">ЛОКАЦИЯ</label><input type="text" name="location" class="form-control"></div>
+                            {% if request.user.is_staff %}
+                            <div class="col-md-12">
+                                <label class="form-label text-muted small fw-bold mb-1">МЕНЕДЖЕР</label>
+                                <select name="manager_id" class="form-select">
+                                    <option value="{{ request.user.id }}">Себе ({{ request.user.username }})</option>
+                                    {% for u in users %}
+                                        {% if u.id != request.user.id %}<option value="{{ u.id }}">{{ u.first_name|default:u.username }}</option>{% endif %}
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            {% endif %}
+                            <div class="col-md-12"><label class="form-label text-muted small fw-bold mb-1">ПРИМЕЧАНИЕ</label><textarea name="notes" class="form-control" rows="3"></textarea></div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer border-0 bg-light px-4 pb-4 pt-0 d-flex justify-content-between">
+                    <button type="button" class="btn btn-outline-secondary px-4 fw-bold" id="btnBackToSelection">НАЗАД</button>
+                    <div class="d-flex gap-2">
+                        {% if request.user.is_staff %}
+                        <button type="button" class="btn btn-outline-danger px-4 fw-bold" id="btnDeleteRecord" style="display: none;">УДАЛИТЬ</button>
+                        {% endif %}
+                        <button type="button" class="btn btn-dark px-5 fw-bold" id="btnSaveRecord">СОХРАНИТЬ</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{% static 'vendor/jquery/jquery-3.7.0.min.js' %}"></script>
+    <script src="{% static 'vendor/bootstrap/bootstrap.bundle.min.js' %}"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ru.js"></script>
+    
+    <script>
+        (function() {
+            const body = document.body;
+            window.CRM_CONFIG = {
+                isStaff: body.getAttribute('data-is-staff') === 'true',
+                userId: body.getAttribute('data-user-id')
+            };
+        })();
+    </script>
+
+    <script src="{% static 'js/crm_main.js' %}?v=59"></script>
+
+    <!-- БЛОК ДЛЯ ДОПОЛНИТЕЛЬНЫХ СКРИПТОВ -->
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

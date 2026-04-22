@@ -1,0 +1,54 @@
+{% extends 'crm/base.html' %}
+{% block content %}
+<div class="table-container bg-white rounded shadow-sm">
+    <table class="table table-hover table-bordered align-middle mb-0 table-gold-header" style="white-space: nowrap;">
+        <thead class="table-dark">
+            <tr>
+                <th>N</th><th>Имя</th><th>Телефон</th><th>Площадь</th><th>Бюджет</th><th>Что ищет</th>
+                <th>Место</th><th>Вид деятельности</th><th>Название</th><th>Этаж</th><th>Примечание</th><th>Менеджер</th><th>Дата</th><th>Статус</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr class="{% if item.status == 'not_actual' %}row-not-actual{% endif %}" data-id="{{ item.id }}" data-type="client">
+                <td class="text-muted fw-bold">{{ forloop.counter }}</td>
+                <td class="fw-bold">{% if item.name %}{{ item.name }}{% else %}-{% endif %}</td>
+                <td>{% if item.phone %}{{ item.phone }}{% else %}-{% endif %}</td>
+                <td>{% if item.area_required %}{{ item.area_required }}{% else %}-{% endif %}</td>
+                <td data-order="{{ item.budget|default:0 }}" class="fw-bold">{% if item.budget %}{{ item.formatted_budget }}{% else %}-{% endif %}</td>
+                <td>{% if item.property_type %}{{ item.property_type }}{% else %}-{% endif %}</td>
+                <td>{% if item.location %}{{ item.location }}{% else %}-{% endif %}</td>
+                <td>{% if item.activity_type %}{{ item.activity_type }}{% else %}-{% endif %}</td>
+                <td>{% if item.company_name %}{{ item.company_name }}{% else %}-{% endif %}</td>
+                <td>{% if item.floor_pref %}{{ item.floor_pref }}{% else %}-{% endif %}</td>
+                <td><div class="text-truncate" style="max-width: 150px; cursor: help;" title="{{ item.notes|default:'' }}">{% if item.notes %}{{ item.notes }}{% else %}-{% endif %}</div></td>
+                
+                <td>{% if item.manager %}{{ item.manager.first_name|default:item.manager.username }}{% else %}-{% endif %}</td>
+                
+                <td data-order="{{ item.date_added|date:'Ymd' }}">
+                    {% if request.user.is_staff or item.manager == request.user %}
+                        <span class="date-badge date-toggle {% if item.date_added >= thirty_days_ago %}date-green{% else %}date-red{% endif %}" title="Обновить дату на сегодня">
+                            {{ item.date_added|date:"d.m.Y" }}
+                        </span>
+                    {% else %}
+                        <span class="date-badge {% if item.date_added >= thirty_days_ago %}date-green{% else %}date-red{% endif %}" style="cursor: default;" title="Обновлять дату может только ответственный менеджер">
+                            {{ item.date_added|date:"d.m.Y" }}
+                        </span>
+                    {% endif %}
+                </td>
+
+                <td>
+                    {% if request.user.is_staff or item.manager == request.user %}
+                        {% if item.status == 'actual' %}<span class="badge bg-gold status-toggle" title="Изменить статус">Актуально</span>
+                        {% else %}<span class="badge bg-dark status-toggle" title="Изменить статус">Неактуально</span>{% endif %}
+                    {% else %}
+                        {% if item.status == 'actual' %}<span class="badge bg-gold" style="cursor: default;" title="Менять статус может только ответственный менеджер">Актуально</span>
+                        {% else %}<span class="badge bg-dark" style="cursor: default;" title="Менять статус может только ответственный менеджер">Неактуально</span>{% endif %}
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
