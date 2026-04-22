@@ -1,0 +1,390 @@
+/**
+ * CRM Main Logic Module
+ */
+
+$(document).ready(function() {
+    let currentRecordType = '';
+    let currentDealType = '';
+    let isEditMode = false;
+    let editRecordId = null;
+    
+    // Кастомные фильтры
+    let activeFilters = { 
+        ranges: {},      // числовые фильтры (площадь, цена)
+        dates: {},       // фильтры по дате
+        selects: {}      // фильтры выпадающих списков (статус, менеджер)
+    };
+
+    // Инициализация Bootstrap модальных окон
+    const modalSelectElement = document.getElementById('addRecordModal');
+    const modalFormElement = document.getElementById('addFormModal');
+    
+    let modalSelect, modalForm;
+    if (modalSelectElement) modalSelect = new bootstrap.Modal(modalSelectElement);
+    if (modalFormElement) modalForm = new bootstrap.Modal(modalFormElement);
+
+    // --- Логика открытия модального окна добавления ---
+    $('#btnOpenAddModal').click(function() { 
+        isEditMode = false; 
+        editRecordId = null;
+        $('#btnBackToSelection').show(); 
+        $('#btnDeleteRecord').hide();
+        $('#btnSaveRecord').html('СОХРАНИТЬ В БАЗУ');
+        $('#formPropertyView')[0].reset(); 
+        $('#formClientView')[0].reset();
+        if (modalSelect) modalSelect.show(); 
+    });
+    
+    $('input[name="recordType"]').on('change', function() {
+        const type = $(this).val();
+        $('input[name="dealType"]').prop('checked', false);
+        $('#continueAddBtn').hide();
+        if (type === 'property') {
+            $('#dealAction1').val('sale'); 
+            $('#labelAction1').html('<i class="bi bi-cash-coin me-2"></i>Продать');
+            $('#dealAction2').val('rent'); 
+            $('#labelAction2').html('<i class="bi bi-key-fill me-2"></i>Сдать');
+        } else if (type === 'client') {
+            $('#dealAction1').val('buy'); 
+            $('#labelAction1').html('<i class="bi bi-bag-check me-2"></i>Купить');
+            $('#dealAction2').val('rent'); 
+            $('#labelAction2').html('<i class="bi bi-house-door me-2"></i>Снять');
+        }
+        $('#step2Block').slideDown(200);
+    });
+
+    $('input[name="dealType"]').on('change', function() { 
+        $('#continueAddBtn').fadeIn(200); 
+    });
+
+    $('#continueAddBtn').click(function() {
+        currentRecordType = $('input[name="recordType"]:checked').val();
+        currentDealType = $('input[name="dealType"]:checked').val();
+        $('#formPropertyView, #formClientView').hide();
+
+        if (currentRecordType === 'property') {
+            const titleText = currentDealType === 'sale' ? 'Новый объект: На продажу' : 'Новый объект: В аренду';
+            $('#addFormModalTitle').html('<i class="bi bi-building-add text-warning me-2" style="color:#D7B56D!important;"></i>' + titleText);
+            $('#formPropertyView').show();
+        } else {
+            const titleText = currentDealType === 'buy' ? 'Новый клиент: Покупка' : 'Новый клиент: Аренда';
+            $('#addFormModalTitle').html('<i class="bi bi-person-add text-warning me-2" style="color:#D7B56D!important;"></i>' + titleText);
+            $('#formClientView').show();
+        }
+        if (modalSelect) modalSelect.hide(); 
+        if (modalForm) modalForm.show();
+    });
+
+    $('#btnBackToSelection').click(function() { 
+        if (modalForm) modalForm.hide(); 
+        if (modalSelect) modalSelect.show(); 
+    });
+
+    // --- Клик по строке (Редактирование) ---
+    $('tbody').on('click', 'td', function() {
+        const colIdx = $(this).index();
+        const totalCols = $(this).closest('tr').children('td').length;
+        if (colIdx >= totalCols - 2) return;
+
+        const tr = $(this).closest('tr');
+        const recId = tr.data('id');
+        const recType = tr.data('type');
+
+        if (!recId || !recType) return;
+
+        $.ajax({
+            url: '/get-record/', 
+            type: 'POST',
+            data: { 
+                'record_id': recId, 
+                'record_type': recType, 
+                'csrfmiddlewaretoken': $('input[name=csrfmiddlewaretoken]').val() 
+            },
+            success: function(res) {
+                if (res.status === 'denied') return; 
+                if (res.status === 'error') { alert(res.message); return; }
+
+                isEditMode = true; 
+                editRecordId = recId; 
+                currentRecordType = recType; 
+                currentDealType = res.data.dealType;
+
+                $('#btnBackToSelection').hide(); 
+                if (window.CRM_CONFIG.isStaff) {
+                    $('#btnDeleteRecord').show();
+                } else {
+                    $('#btnDeleteRecord').hide();
+                }
+
+                $('#btnSaveRecord').html('СОХРАНИТЬ ИЗМЕНЕНИЯ');
+
+                const formId = recType === 'property' ? '#formPropertyView' : '#formClientView';
+                const form = $(formId); 
+                form[0].reset();
+
+                $.each(res.data, function(key, val) {
+                    const input = form.find('[name="'+key+'"]');
+                    if (input.length) { input.val(val); }
+                });
+
+                $('#formPropertyView, #formClientView').hide();
+                const icon = '<i class="bi bi-pencil-square text-warning me-2" style="color:#D7B56D!important;"></i>';
+                if (recType === 'property') {
+                    const titleText = currentDealType === 'sale' ? 'Редактирование (Продажа)' : 'Редактирование (Аренда)';
+                    $('#addFormModalTitle').html(icon + titleText);
+                    $('#formPropertyView').show();
+                } else {
+                    const titleText = currentDealType === 'buy' ? 'Редактирование (Покупка)' : 'Редактирование (Аренда)';
+                    $('#addFormModalTitle').html(icon + titleText);
+                    $('#formClientView').show();
+                }
+                if (modalForm) modalForm.show();
+            }
+        });
+    });
+
+    // --- Сохранение записи ---
+    $('#btnSaveRecord').click(function(e) {
+        e.preventDefault();
+        const btn = $(this);
+        const formId = currentRecordType === 'property' ? '#formPropertyView' : '#formClientView';
+        let formData = $(formId).serialize(); 
+        formData += '&recordType=' + currentRecordType + '&dealType=' + currentDealType + '&csrfmiddlewaretoken=' + $('input[name=csrfmiddlewaretoken]').val();
+        const ajaxUrl = isEditMode ? '/edit-record/' : '/add-record/';
+        if (isEditMode) formData += '&record_id=' + editRecordId;
+
+        btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span>СОХРАНЕНИЕ...');
+        $.ajax({
+            url: ajaxUrl, type: 'POST', data: formData,
+            success: function(response) {
+                if(response.status === 'ok') location.reload(); 
+                else { alert('Ошибка: ' + response.message); btn.prop('disabled', false).html(isEditMode ? 'СОХРАНИТЬ ИЗМЕНЕНИЯ' : 'СОХРАНИТЬ В БАЗУ'); }
+            }
+        });
+    });
+
+    // --- Удаление записи ---
+    $('#btnDeleteRecord').click(function(e) {
+        e.preventDefault();
+        if (!confirm('Вы уверены, что хотите навсегда удалить эту запись?')) return;
+        const btn = $(this); btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span>');
+        $.ajax({
+            url: '/delete-record/', type: 'POST',
+            data: { 'record_id': editRecordId, 'record_type': currentRecordType, 'csrfmiddlewaretoken': $('input[name=csrfmiddlewaretoken]').val() },
+            success: function(response) {
+                if (response.status === 'ok') location.reload();
+                else { alert('Ошибка: ' + response.message); btn.prop('disabled', false).html('УДАЛИТЬ'); }
+            }
+        });
+    });
+
+    // --- Быстрое переключение статуса ---
+    $('tbody').on('click', '.status-toggle', function(e) {
+        e.stopPropagation(); 
+        const badge = $(this); const td = badge.closest('td'); const tr = badge.closest('tr');
+        badge.html('<span class="spinner-border spinner-border-sm" style="width: 1rem; height: 1rem;"></span>');
+        $.ajax({
+            url: '/toggle-status/', type: 'POST',
+            data: { 'record_id': tr.data('id'), 'record_type': tr.data('type'), 'csrfmiddlewaretoken': $('input[name=csrfmiddlewaretoken]').val() },
+            success: function(response) {
+                if (response.status === 'ok') {
+                    const newHtml = response.new_status === 'actual' 
+                        ? '<span class="badge bg-gold status-toggle" title="Изменить статус">Актуально</span>' 
+                        : '<span class="badge bg-dark status-toggle" title="Изменить статус">Неактуально</span>';
+                    response.new_status === 'actual' ? tr.removeClass('row-not-actual') : tr.addClass('row-not-actual');
+                    $('.table').DataTable().cell(td).data(newHtml).draw(false);
+                } else { alert('Ошибка: ' + response.message); location.reload(); }
+            }
+        });
+    });
+
+    // --- Быстрое обновление даты ---
+    $('tbody').on('click', '.date-toggle', function(e) {
+        e.stopPropagation(); 
+        const badge = $(this); const td = badge.closest('td'); const tr = badge.closest('tr');
+        badge.html('<span class="spinner-border spinner-border-sm" style="width: 0.8rem; height: 0.8rem;"></span>').removeClass('date-green date-red');
+        $.ajax({
+            url: '/update-date/', type: 'POST',
+            data: { 'record_id': tr.data('id'), 'record_type': tr.data('type'), 'csrfmiddlewaretoken': $('input[name=csrfmiddlewaretoken]').val() },
+            success: function(response) {
+                if (response.status === 'ok') {
+                    const newHtml = '<span class="date-badge date-toggle date-green" title="Обновить дату на сегодня">' + response.new_date_str + '</span>';
+                    $('.table').DataTable().cell(td).data(newHtml);
+                    td.attr('data-order', response.new_date_order);
+                } else { alert('Ошибка: ' + response.message); }
+            }
+        });
+    });
+
+    // --- КОМБИНИРОВАННЫЙ ФИЛЬТР DataTables (учитывает все типы фильтров одновременно) ---
+    $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
+        
+        // 1. Проверяем числовые фильтры (площадь, цена, бюджет)
+        for (let colIdx in activeFilters.ranges) {
+            const filter = activeFilters.ranges[colIdx];
+            if (filter.min !== null || filter.max !== null) {
+                let cellVal = parseFloat(String(data[colIdx]).replace(/<[^>]*>?/gm, '').replace(/\s/g, '').replace('&nbsp;', ''));
+                if (isNaN(cellVal)) return false;
+                if (filter.min !== null && cellVal < filter.min) return false;
+                if (filter.max !== null && cellVal > filter.max) return false;
+            }
+        }
+        
+        // 2. Проверяем фильтры дат
+        for (let colIdx in activeFilters.dates) {
+            const dFilter = activeFilters.dates[colIdx];
+            if (dFilter.active) {
+                const cellStr = String(data[colIdx]).replace(/<[^>]*>?/gm, '').trim();
+                const parts = cellStr.split('.');
+                if (parts.length === 3) {
+                    const cDate = new Date(parts[2], parts[1] - 1, parts[0]).getTime();
+                    if (dFilter.exact && cDate !== dFilter.min) return false;
+                    if (!dFilter.exact && (cDate < dFilter.min || cDate > dFilter.max)) return false;
+                } else { 
+                    return false; 
+                }
+            }
+        }
+        
+        // 3. Проверяем фильтры выпадающих списков (статус, менеджер)
+        for (let colIdx in activeFilters.selects) {
+            const val = activeFilters.selects[colIdx];
+            if (val) {
+                let cellData = data[colIdx];
+                let cellText = $('<div>').html(cellData).text().replace(/\s+/g, ' ').trim();
+                if (cellText !== val) return false;
+            }
+        }
+        
+        return true;
+    });
+
+    // --- Инициализация ОСНОВНЫХ ТАБЛИЦ ---
+    const mainTable = $('.table:not(#reportTable)');
+    if (mainTable.length > 0) {
+        mainTable.find('thead tr').clone(true).addClass('filters').appendTo(mainTable.find('thead'));
+        
+        const table = mainTable.DataTable({
+            "language": { "url": "//cdn.datatables.net/plug-ins/1.13.6/i18n/ru.json" },
+            "paging": true, "pageLength": 100, "lengthMenu": [[100, 200, 500, -1],[100, 200, 500, "Все"]],
+            "deferRender": true, "info": false, "dom": "t<'d-flex justify-content-between align-items-center mt-2'lp>",
+            "orderCellsTop": true, "autoWidth": false, 
+            "drawCallback": function(settings) {
+                const api = this.api(); const pageInfo = api.page.info(); const wrapper = $(settings.nTableWrapper);
+                if (pageInfo.pages <= 1) wrapper.find('.dataTables_paginate').hide(); else wrapper.find('.dataTables_paginate').show();
+                if (pageInfo.recordsDisplay <= 100) wrapper.find('.dataTables_length').hide(); else wrapper.find('.dataTables_length').show();
+            },
+            initComplete: function () {
+                const api = this.api();
+                api.columns().eq(0).each(function (colIdx) {
+                    const cell = mainTable.find('.filters th').eq(colIdx);
+                    const title = mainTable.find('thead tr:first th').eq(colIdx).text().trim().toLowerCase();
+                    const headCell = $(api.column(colIdx).header());
+                    
+                    if (colIdx === 0 || title === '№' || title === '#') { headCell.addClass('col-number'); cell.addClass('col-number'); }
+                    else if (title.includes('примечание') || title.includes('комментарий')) { headCell.addClass('truncate-text'); cell.addClass('truncate-text'); }
+                    else if (title.includes('дата') || title.includes('этаж') || title.includes('уровн') || title.includes('площадь') || title.includes('цена') || title.includes('стоимость') || title.includes('бюджет')) { headCell.addClass('narrow-col'); cell.addClass('narrow-col'); }
+
+                    if (colIdx === 0 || title === '№' || title === '#') { 
+                        cell.html(''); 
+                    }
+                    else if (title.includes('площадь') || title.includes('цена') || title.includes('бюджет') || title.includes('стоимость')) {
+                        cell.html('<div class="d-flex gap-1"><input type="number" class="min-range" placeholder="От" /><input type="number" class="max-range" placeholder="До" /></div>');
+                        $('input', cell).on('keyup change', function () { 
+                            const minV = parseFloat($('.min-range', cell).val()); 
+                            const maxV = parseFloat($('.max-range', cell).val());
+                            activeFilters.ranges[colIdx] = { 
+                                min: isNaN(minV) ? null : minV, 
+                                max: isNaN(maxV) ? null : maxV 
+                            };
+                            table.draw(); 
+                        });
+                    } 
+                    else if (title.includes('статус') || title.includes('менеджер')) {
+                        const select = $('<select><option value="">Все</option></select>'); 
+                        cell.html(select);
+                        
+                        let uniqueVals = [];
+                        api.column(colIdx).data().each(function (d) { 
+                            let val = $('<div>').html(d).text();
+                            val = val.replace(/\u00A0/g, ' ').replace(/\s+/g, ' ').trim();
+                            if (val && val !== '-' && uniqueVals.indexOf(val) === -1) {
+                                uniqueVals.push(val); 
+                            }
+                        });
+                        uniqueVals.sort(); 
+                        
+                        $.each(uniqueVals, function(i, val) { 
+                            select.append('<option value="' + val + '">' + val + '</option>'); 
+                        });
+                        
+                        // ИСПРАВЛЕНО: сохраняем значение в activeFilters.selects и не сбрасываем другие фильтры
+                        select.on('change', function () { 
+                            const val = $(this).val();
+                            if (val) {
+                                activeFilters.selects[colIdx] = val;
+                            } else {
+                                delete activeFilters.selects[colIdx];
+                            }
+                            table.draw();
+                        });
+                    } 
+                    else if (title.includes('дата')) {
+                        const $input = $('<input type="text" class="date-range-filter" placeholder="Даты..." readonly="readonly" />');
+                        cell.html($input);
+                        flatpickr($input[0], { 
+                            mode: "range", dateFormat: "d.m.Y", locale: "ru", 
+                            onChange: function(selectedDates) { 
+                                if (selectedDates.length > 0) {
+                                    const minD = selectedDates[0].setHours(0,0,0,0);
+                                    if (selectedDates.length === 1) {
+                                        activeFilters.dates[colIdx] = { active: true, exact: true, min: minD };
+                                    } else if (selectedDates.length === 2) {
+                                        activeFilters.dates[colIdx] = { 
+                                            active: true, 
+                                            exact: false, 
+                                            min: minD, 
+                                            max: selectedDates[1].setHours(0,0,0,0) 
+                                        };
+                                    }
+                                } else { 
+                                    delete activeFilters.dates[colIdx];
+                                }
+                                table.draw(); 
+                            }
+                        });
+                    } else {
+                        cell.html('<input type="text" placeholder="Поиск..." />');
+                        $('input', cell).on('keyup change', function () { 
+                            if (api.column(colIdx).search() !== this.value) {
+                                api.column(colIdx).search(this.value).draw();
+                            }
+                        });
+                    }
+                });
+                setTimeout(function() { $('#table-loader').hide(); $('#table-wrapper').addClass('visible'); }, 50);
+            }
+        });
+
+        $('#customGlobalSearch').on('keyup change', function() { 
+            table.search(this.value).draw(); 
+        });
+        
+        $('#customClearBtn').on('click', function() {
+            // Сбрасываем все фильтры
+            activeFilters = { ranges: {}, dates: {}, selects: {} };
+            table.search(''); 
+            $('#customGlobalSearch').val(''); 
+            $('.filters input:not(.date-range-filter), .filters select').val(''); 
+            $('.date-range-filter').each(function() { 
+                if(this._flatpickr) this._flatpickr.clear(); 
+            });
+            table.columns().search('').draw();
+        });
+        
+        mainTable.wrap('<div class="custom-table-scroll"></div>');
+    } else {
+        $('#table-loader').hide(); 
+        $('#table-wrapper').addClass('visible');
+    }
+});
