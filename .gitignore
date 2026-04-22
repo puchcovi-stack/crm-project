@@ -26,6 +26,7 @@ target/
 *.tmp
 *.swp
 *.swo
+logs/
 
 # Environment
 .env
@@ -68,3 +69,17 @@ htmlcov/
 *.tar.bz2
 *.tar.xz
 *.tar.zst
+
+# Backup files
+*.backup*
+*~
+
+# Database files (SQLite)
+*.db
+*.sqlite3
+
+# Media files (user uploads)
+media/
+
+# Static collected files (generated)
+staticfiles/
