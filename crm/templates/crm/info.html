@@ -78,44 +78,47 @@
 
 <style>
     /* Скрываем элементы управления главной таблицей */
-    #customGlobalSearch, 
-    #customClearBtn { 
-        display: none !important; 
+    #customGlobalSearch,
+    #customClearBtn {
+        display: none !important;
     }
-    
+
     .table tbody tr:hover {
         background-color: rgba(215, 181, 109, 0.08) !important;
     }
-    
+
     .table td {
         vertical-align: middle;
         padding-top: 0.5rem;
         padding-bottom: 0.5rem;
     }
-    
+
     /* Стилизация скроллбара */
-    .table-responsive::-webkit-scrollbar { 
-        width: 8px; 
-        height: 8px; 
+    .table-responsive::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
     }
-    .table-responsive::-webkit-scrollbar-track { 
-        background: #f1f1f1; 
-        border-radius: 4px; 
+
+    .table-responsive::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 4px;
     }
-    .table-responsive::-webkit-scrollbar-thumb { 
-        background: #c1c1c1; 
-        border-radius: 4px; 
+
+    .table-responsive::-webkit-scrollbar-thumb {
+        background: #c1c1c1;
+        border-radius: 4px;
     }
-    .table-responsive::-webkit-scrollbar-thumb:hover { 
-        background: #D7B56D; 
+
+    .table-responsive::-webkit-scrollbar-thumb:hover {
+        background: #D7B56D;
     }
-    
+
     /* DataTables search box styling */
     .dataTables_wrapper .dataTables_filter {
         margin-bottom: 15px;
         margin-right: 15px;
     }
-    
+
     .dataTables_wrapper .dataTables_filter input {
         border: 1px solid #dee2e6;
         border-radius: 20px;
@@ -123,41 +126,41 @@
         margin-left: 8px;
         outline: none;
     }
-    
+
     .dataTables_wrapper .dataTables_filter input:focus {
         border-color: #D7B56D;
         box-shadow: 0 0 0 2px rgba(215, 181, 109, 0.2);
     }
-    
+
     .dataTables_wrapper .dataTables_length {
         margin-bottom: 15px;
         margin-left: 15px;
     }
-    
+
     .dataTables_wrapper .dataTables_length select {
         border: 1px solid #dee2e6;
         border-radius: 8px;
         padding: 0.2rem 0.5rem;
         margin: 0 5px;
     }
-    
+
     .dataTables_wrapper .dataTables_info {
         margin-left: 15px;
         margin-bottom: 15px;
         color: #6c757d;
         font-size: 0.85rem;
     }
-    
+
     .dataTables_wrapper .dataTables_paginate {
         margin-right: 15px;
         margin-bottom: 15px;
     }
-    
+
     .dataTables_wrapper .dataTables_paginate .paginate_button {
         border-radius: 6px !important;
         margin: 0 2px;
     }
-    
+
     .dataTables_wrapper .dataTables_paginate .paginate_button.current {
         background: #D7B56D !important;
         border-color: #D7B56D !important;
